@@ -109,11 +109,13 @@ The Ingestion Config table contains data/table ingestion configurations such as 
 
 
 
+
 **INGESTION_COLUMN_DETAILS**
 The Ingestion Column Details table contains column details for the data that is being ingested such as column names, data types, ordinal positions, target table
 
 
 ![alt text](images/ingestion_column_details.png)
+
 
 
 
@@ -133,9 +135,11 @@ unique `action_id` for each data ingestion workflow that is executed.
 ![alt text](images/workflow_action_history.png)
 
 
+
 **WORKFLOW_AUDIT_DETAILS**
 The Workflow Audit Details table contains statistical metadata for workflow actions such as record counts, deltas, variances and standard deviations.
 Each workflow audit record has a unique `audit_id` amd map to the `workflow_action_history` table by `action_id`.
+
 
 
 ## Log Format:
@@ -148,7 +152,7 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 
 ## Data Ingestions: 
 
-**Request**
+**REQUEST**
 
 For a web request data source you will require the following components for a successful communication between the client and server.
 
@@ -185,7 +189,7 @@ The Google Cloud Storage SDK for Python, also known as the Google Cloud Storage 
 * Prefix Path
 * File Name
 
-Google Cloud Storage: <a href="https://cloud.google.com/python/docs/reference/storage/latest"> target="_black">Python Client for Google Cloud Storage</a>
+Google Cloud Storage: <a href="https://cloud.google.com/python/docs/reference/storage/latest" target="_black">Python Client for Google Cloud Storage</a>
 
 **SFTP**
 
@@ -232,42 +236,30 @@ TBD ...
 ### Example Data Ingestion Executions:
 **NOTE:** The First data load should be a `FULL` data load. If `ingestion_config` is configured for `Incremental` you can override.
 
-* **CRYPTO BITCOIN_HISTORY W/ LOAD TYPE OVERRIDE:** 
+* **REQUEST W/ LOAD TYPE OVERRIDE:** 
 ```
-python3 controller.py -s REQUEST -cn COINCAP_BITCOIN_HISTORY -a BITCOIN_HISTORY -lt FULL -l info --print_log
+python3 controller.py -s REQUEST -cn COINCAP_BITCOIN_HISTORY -a BITCOIN_HISTORY -lt FULL -l info
 ```
 
 
-* **CRYPTO ASSET W/ PRESET CONFIG:** 
+* **REQUEST W/ CONFIGURATION FILE OVERRIDE:** 
 ```
 python3 controller.py -s REQUEST -cn COINCAP_ASSETS -a ASSETS -c ./new_config.ini -l info
 ```
 
 
-* **Crypto Asset data:** 
+* **REQUEST W/ PRINT LOG ON TERMINAL:** 
 ``` 
-python3 controller.py -s REQUEST -cn COINCAP_ASSET -a ASSETS -l info 
+python3 controller.py -s REQUEST -cn COINCAP_ASSET -a ASSETS -l info  --print_log
 ```
 
 
-* **CRYPTO EXCHANGE DATA:** 
-```
-python3 controller.py -s REQUEST -cn COINCAP_EXCHANGES -a EXCHANGES -l info
-```
-
-
-* **CRYPTO COIN RATES:** 
-```
-python3 controller.py -s REQUEST -cn COINCAP_RATES -a RATES -l info
-```
-
-
-* **CRYPTO MARKETS DATA:** 
-```
-python3 controller.py -s REQUEST -cn COINCAP_MARKETS -a MARKETS -l info
-```
-
-
-* **S3 (DUMMY DATA):** 
+* **AWS S3 BUCKET:** 
 ```
 python3 controller.py -s S3 -cn S3_COINCAP -a SOLANA_HISTORY -l info
+```
+
+* **GOOGLE CLOUD STORAGE:**
+```
+python3 controller.py -s GCS -cn GCS_COINCAP -a SOLANA_HISTORY -l info
+```
