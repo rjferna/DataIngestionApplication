@@ -22,10 +22,13 @@ from postgres_query import (
 from gcp_common import (
     archive_file,
     get_gcp_storage,
+    upload_to_bucket,
+    gcp_execute_query,
+)
+from gcp_query import (
     get_incremental_date,
     get_record_count,
     get_table_exists,
-    upload_to_bucket,
     create_external_table,
     create_and_load_staging_table,
     create_and_load_reference_table,
@@ -93,6 +96,7 @@ def main():
         )
 
         db.open_connection()
+
         logger.info("Postgres Connection Open...")
 
         query = get_connection_details(args.get("connection"), args.get("asset"))
@@ -172,6 +176,7 @@ def main():
             )
 
         logger.info(f"Beginning {args.get('section')} Data Ingestion")
+
         # Identify Data Ingestion Workflow type
         if ingestion_type == "REQUEST":
             # Decrypt Credentials
@@ -193,14 +198,24 @@ def main():
                 logger.info(
                     f"Checking if Reference Table Exists: {project_id}.REF_{database_schema}.{table_name}"
                 )
-                ref_exists = get_table_exists(
+
+                query = get_table_exists(
                     project_id=project_id,
                     dataset=database_schema,
                     table_name=table_name,
+                )
+
+                ref_exists = gcp_execute_query(
+                    query=query,
+                    return_response=1,
                     keyfile_path=config_var.get("gcp_creds"),
                 )
 
-                if str(ref_exists) == str or (ref_exists == 0 and load_type == "FULL"):
+                if (
+                    str(ref_exists) == str
+                    or ref_exists == 0
+                    or (ref_exists == 1 and load_type == "FULL")
+                ):
                     incr_result = (datetime.now() - timedelta(days=3)).strftime(
                         "%Y-%m-%dT%H:%M:%SZ"
                     )
@@ -218,13 +233,20 @@ def main():
                     )
                 else:
                     logger.info("Get last incremental loadtime")
-                    incr_result = get_incremental_date(
+
+                    query = get_incremental_date(
                         date=incremental_date_column,
                         project_id=project_id,
                         dataset=database_schema,
                         table_name=table_name,
+                    )
+
+                    incr_result = gcp_execute_query(
+                        query=query,
+                        return_response=1,
                         keyfile_path=config_var.get("gcp_creds"),
                     )
+
                     logger.info(f"Data collection start datetime: {incr_result}")
 
                     response = get_request(
@@ -263,12 +285,15 @@ def main():
             for name, val in decrypted_credential.items():
                 gcs_creds.update({name: pc.decrypt(val)})
 
-            response = get_gcp_storage(
+            query = get_gcp_storage(
                 bucket_name=connection_url,
                 prefix_path=source_schema_table_name,
                 import_path=config_var.get("file_path"),
                 import_file="{}.{}".format(table_name, file_format),
-                keyfile=gcs_creds,
+            )
+
+            response = gcp_execute_query(
+                query=query, return_response=1, keyfile=config_var.get("gcp_creds")
             )
 
         # Sleep for 3 seconds
@@ -346,6 +371,7 @@ def main():
                 destination_blob_name=logfile,
                 keyfile_path=config_var.get("gcp_creds"),
             )
+
             db.close_connection()
             sys.exit(1)
 
@@ -422,7 +448,8 @@ def main():
         logger.info(
             f"Creating External Table: {project_id}.EXTERNAL_{database_schema}.{args.get('asset')}"
         )
-        create_external = create_external_table(
+
+        query = create_external_table(
             project_id=project_id,
             dataset=database_schema,
             table_name=table_name,
@@ -433,7 +460,10 @@ def main():
             + "."
             + file_format.lower(),
             file_format=file_format,
-            keyfile_path=config_var.get("gcp_creds"),
+        )
+
+        create_external = gcp_execute_query(
+            query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
         )
 
         if "Error:" in create_external:
@@ -463,7 +493,8 @@ def main():
             sys.exit(1)
 
         # Get Column Details from GCP
-        logger.info(f"Querying GCP for Column Details.")
+        logger.info(f"Querying database for Column Details.")
+
         query = get_column_details(
             project_id=project_id,
             database_schema=database_schema,
@@ -513,13 +544,16 @@ def main():
         logger.info(
             f"Creating and loading Staging Table: {project_id}.STG_{database_schema}.{table_name}"
         )
-        create_load_staging = create_and_load_staging_table(
+        query = create_and_load_staging_table(
             project_id=project_id,
             dataset=database_schema,
             table_name=table_name,
             stg_and_ref_create_table=stg_and_ref_create_table,
             source_to_stg_conversion=source_to_stg_conversion,
-            keyfile_path=config_var.get("gcp_creds"),
+        )
+
+        create_load_staging = gcp_execute_query(
+            query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
         )
 
         if "Error:" in create_load_staging:
@@ -555,11 +589,12 @@ def main():
         logger.info(
             f"Checking if Reference Table Exists: {project_id}.REF_{database_schema}.{table_name}"
         )
-        ref_exists = get_table_exists(
-            project_id=project_id,
-            dataset=database_schema,
-            table_name=table_name,
-            keyfile_path=config_var.get("gcp_creds"),
+        query = get_table_exists(
+            project_id=project_id, dataset=database_schema, table_name=table_name
+        )
+
+        ref_exists = gcp_execute_query(
+            query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
         )
 
         if type(ref_exists) == str:
@@ -580,25 +615,28 @@ def main():
             logger.info(
                 f"Reference Table Flag: {ref_exists}. Table does not exists, Creating table & loading in staging data."
             )
-            create_ref = create_and_load_reference_table(
-                flag=1,
+            query = create_and_load_reference_table(
+                flag=0,
                 project_id=project_id,
                 dataset=database_schema,
                 table_name=table_name,
-                load_type=load_type,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
                 primary_key_column=primary_key_column,
-                keyfile_path=config_var.get("gcp_creds"),
+            )
+
+            create_ref = gcp_execute_query(
+                query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
             )
 
             logger.info(f"Get Reference Table Record Count.")
 
-            record_cnt = get_record_count(
-                project_id=project_id,
-                dataset=database_schema,
-                table_name=table_name,
-                keyfile_path=config_var.get("gcp_creds"),
+            query = get_record_count(
+                project_id=project_id, dataset=database_schema, table_name=table_name
+            )
+
+            record_cnt = gcp_execute_query(
+                query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
             )
 
             logger.info(f"Set Workflow audit details.")
@@ -626,11 +664,13 @@ def main():
             )
 
             logger.info(f"Get Reference Table Record Count.")
-            record_cnt = get_record_count(
-                project_id=project_id,
-                dataset=database_schema,
-                table_name=table_name,
-                keyfile_path=config_var.get("gcp_creds"),
+
+            query = get_record_count(
+                project_id=project_id, dataset=database_schema, table_name=table_name
+            )
+
+            record_cnt = gcp_execute_query(
+                query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
             )
 
             logger.info(f"Set Workflow audit details.")
@@ -649,16 +689,18 @@ def main():
 
             logger.info(f"Workflow Audit Details: {results}")
 
-            create_ref = create_and_load_reference_table(
-                flag=1,
+            query = create_and_load_reference_table(
+                flag=0,
                 project_id=project_id,
                 dataset=database_schema,
                 table_name=table_name,
-                load_type=load_type,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
                 primary_key_column=primary_key_column,
-                keyfile_path=config_var.get("gcp_creds"),
+            )
+
+            create_ref = gcp_execute_query(
+                query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
             )
 
             logger.info(
@@ -670,11 +712,13 @@ def main():
             )
 
             logger.info(f"Get Reference Table Record Count.")
-            record_cnt = get_record_count(
-                project_id=project_id,
-                dataset=database_schema,
-                table_name=table_name,
-                keyfile_path=config_var.get("gcp_creds"),
+
+            query = get_record_count(
+                project_id=project_id, dataset=database_schema, table_name=table_name
+            )
+
+            record_cnt = gcp_execute_query(
+                query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
             )
 
             logger.info(f"Set Workflow audit details.")
@@ -693,16 +737,18 @@ def main():
 
             logger.info(f"Workflow Audit Details: {results}")
 
-            create_ref = create_and_load_reference_table(
+            query = create_and_load_reference_table(
                 flag=1,
                 project_id=project_id,
                 dataset=database_schema,
                 table_name=table_name,
-                load_type=load_type,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
                 primary_key_column=primary_key_column,
-                keyfile_path=config_var.get("gcp_creds"),
+            )
+
+            create_ref = gcp_execute_query(
+                query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
             )
 
             logger.info(
@@ -739,11 +785,12 @@ def main():
         # Sleep for 1 seconds
         time.sleep(1)
 
-        record_cnt = get_record_count(
-            project_id=project_id,
-            dataset=database_schema,
-            table_name=table_name,
-            keyfile_path=config_var.get("gcp_creds"),
+        query = get_record_count(
+            project_id=project_id, dataset=database_schema, table_name=table_name
+        )
+
+        record_cnt = gcp_execute_query(
+            query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
         )
 
         # Update Workflow Audit Details to Include Execution Stats
