@@ -3,33 +3,92 @@ The goal of this project repository is to build a data ingestion application to 
 
 ## Prerequisites
 
-1. GCP Account (Free trial is offered)
+1. Docker Engine: <a href="https://docs.docker.com/engine/install/ubuntu/" target="_blank"> Docker Installation Documentation</a>
+
+2. GCP Account (Free trial is offered)
     * Create a BigQuery Project for Metadata Utilities.
     * Create bucket for Metadata project
     * Create a Service Account for Metadata Project
     * Generate a keyfile Metadata Project
 
-2. Docker Engine: <a href="https://docs.docker.com/engine/install/ubuntu/" target="_blank"> Docker Installation Documentation</a>
+3. AWS Account (Free trial is offered) for AWS S3 bucket.
 
-3. CoinCap API Key
+4. CoinCap API Key (Example: Request data source)
     * To Generate API key refer to: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a> 
+
+
+## Docker Containers
+
+**Build Postgres Image**
+
+```
+docker build -t data-ingestion-postgres-app-image .
+```
+
+**Run Postgres Container with Network**
+
+```
+docker run -d --name data-ingestion-postgres-app-container --network data-ingestion-network data-ingestion-postgres-app-image
+```
+
+**Run Postgres Container**
+
+```
+docker run -d \
+  --name data-ingestion-postgres-app-container \
+  -e POSTGRES_USER=metadata_user \
+  -e POSTGRES_PASSWORD=admin \
+  -e POSTGRES_DB=metadata_utilities \
+  -p 5432:5432 \
+  -v /data:/var/lib/postgresql/data \
+  data-ingestion-postgres-app-image
+```
+
+**Open an interactive bash session inside the container**
+```
+docker exec -it metadata-db bash
+```
+
+**Inside the container, you can then use psql (PostgreSQL's command-line tool)**
+
+```
+psql -U metadata_user metadata_utilities
+```
+
+**Build Python Image**
+
+```
+docker build -t data-ingestion-python-app-image .
+```
+
+**Run Python Container with Network**
+
+```
+docker run -d --name data-ingestion-python-app-container --network data-ingestion-network data-ingestion-python-app-image
+```
+
+**Open Interactive bash session inside Python Container**
+
+```
+docker exec -it data-ingestion-python-app-container bash
+```
 
 
 
 ## Postgres Metadata Utility Objects
 
 The automation is utilizing a handful of Postgres tables in the `metadata-utilites` database. A user will enter data source connection information, table ingestion 
-configurations, and column details into the SQL tables. lastly, the user executes the python controller script with the required data ingestion arguements which 
-help identify the source we are accessing for extraction. 
+configurations, and column details into the metadata SQL tables. lastly, the user executes the python controller script with the required parser arguements which 
+help identify the source we are accessing. 
 
-The controller script will then pull the required data ingestion details from the `metadata-utilities` tables and begin extraction from the data source. Writing 
-the data into the target GCP storage. As the controller script runs, a log file is generated detailing each action taken by the controller script. As well as the 
-Start & End datetimestamps of the workflow execution which is recorded in the `workflow_action_history` table with a unique `action_id` for each job execution.
+The controller script will then pull the data ingestion details from the `metadata-utilities` tables and begin extraction from the data source. Ingesting 
+the data into the target GCP storage. As the controller script runs, a log file is generated detailing each action taken, as well as the Start & End datetimess 
+of the workflow execution which is recorded in the `workflow_action_history` table with a unique `action_id` for each job execution.
 
 
 
 **ER Diagram:**
-![alt text](git/DataIngestionApplication/images/metadata_utilities.png)
+![alt text](images/metadata_utilities.png)
 
 
 
@@ -37,7 +96,7 @@ Start & End datetimestamps of the workflow execution which is recorded in the `w
 This table will hold endpoint connection information as well as encrypted credentials
 
 
-![alt text](git/DataIngestionApplication/images/connection_info.png)
+![alt text](images/connection_info.png)
 
 
 
@@ -46,7 +105,7 @@ This table will hold endpoint connection information as well as encrypted creden
 The Ingestion Config table contains data/table ingestion configurations such as ingestion type, primary key, incremental or full data load, delimiter, file type etc.
 
 
-![alt text](git/DataIngestionApplication/images/ingestion_config.png)
+![alt text](images/ingestion_config.png)
 
 
 
@@ -54,7 +113,7 @@ The Ingestion Config table contains data/table ingestion configurations such as 
 The Ingestion Column Details table contains column details for the data that is being ingested such as column names, data types, ordinal positions, target table
 
 
-![alt text](git/DataIngestionApplication/images/ingestion_column_details.png)
+![alt text](images/ingestion_column_details.png)
 
 
 
@@ -71,18 +130,12 @@ unique `action_id` for each data ingestion workflow that is executed.
 
 
 
-![alt text](git/DataIngestionApplication/images/workflow_action_history.png)
+![alt text](images/workflow_action_history.png)
 
 
 **WORKFLOW_AUDIT_DETAILS**
 The Workflow Audit Details table contains statistical metadata for workflow actions such as record counts, deltas, variances and standard deviations.
 Each workflow audit record has a unique `audit_id` amd map to the `workflow_action_history` table by `action_id`.
-
-
-
-**CHANGE_EVENT**
-
-TBD...
 
 
 ## Log Format:
@@ -95,19 +148,25 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 
 ## Data Ingestions: 
 
-**CoinCap**
+**Request**
 
-CoinCap is a useful tool for real-time pricing and market activity for over 1,000 cryptocurrencies. By collecting exchange data from thousands of markets, we are able to offer
-transparent and accurate data on asset price and availability. 
+For a web request data source you will require the following components for a successful communication between the client and server.
 
-
-CoinCap: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a>
-
+* Endpoint URL: Specific address where the API is hosted. 
+* Headers: Provides essential information for the server to process the request.
+    * Content-Type: Specifies the format of the data being sent.
+    * Authorization: Authentication information like API keys, tokens and/or other credentials
+* Parameters: These can be included in the URL query string or in the request body. Parameters are used to specify additional details about the request, such as filters, sorting criteria, or pagination.
+* Body: For POST, PUT, and PATCH requests, the body contains the data to be sent to the server. This could be in JSON, XML, or other formats
+* Authentication: Depending on the API, you may need to provide authentication details like API keys, OAuth tokens, or other credentials.
+* Versioning: Some APIs require specifying a version in the URL or headers to ensure compatibility with the correct API version.
+* Rate Limiting: Be aware of any rate limits imposed by the API provider to avoid hitting usage limits.
 
 
 **AWS S3 BUCKET**
 
 AWS SDK for python to support S3 as a data source is available. The requirements to establish a S3 connection are the following.
+
 * AWS Access Key
 * AWS Security Token
 * Bucket Name
@@ -119,22 +178,30 @@ Boto3: <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.ht
 
 **GCS BUCKET**
 
-TBD ...
+The Google Cloud Storage SDK for Python, also known as the Google Cloud Storage Python Client, is a library that allows you to interact with Google Cloud Storage from within your Python code.
 
+* key file ()
+* Storage Bucket Name
+* Prefix Path
+* File Name
 
+Google Cloud Storage: <a href="https://cloud.google.com/python/docs/reference/storage/latest"> target="_black">Python Client for Google Cloud Storage</a>
 
 **SFTP**
 
 TBD ...
 
 
-## File Formats: 
+
+## Supported File Formats: 
 
 * CSV
 * JSON (TBD)
+* Parquet
 * DAT
 * XLS
 * XLSX
+
 
 
 ### Parser details
@@ -163,7 +230,7 @@ TBD ...
 
 
 ### Example Data Ingestion Executions:
-**NOTE:** The First data load should always be a `FULL` data load. If `ingestion_config` is configured for `Incremental` you can override.
+**NOTE:** The First data load should be a `FULL` data load. If `ingestion_config` is configured for `Incremental` you can override.
 
 * **CRYPTO BITCOIN_HISTORY W/ LOAD TYPE OVERRIDE:** 
 ```
@@ -204,4 +271,3 @@ python3 controller.py -s REQUEST -cn COINCAP_MARKETS -a MARKETS -l info
 * **S3 (DUMMY DATA):** 
 ```
 python3 controller.py -s S3 -cn S3_COINCAP -a SOLANA_HISTORY -l info
-
