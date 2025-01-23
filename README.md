@@ -141,6 +141,17 @@ The Workflow Audit Details table contains statistical metadata for workflow acti
 Each workflow audit record has a unique `audit_id` amd map to the `workflow_action_history` table by `action_id`.
 
 
+| Audit Details        | Description                                                                                        |
+|----------------------|----------------------------------------------------------------------------------------------------|
+| execution_duration   | The duration of the workflow execution in minutes.                                                 |
+| record_cnt_before    | The record count for the target reference table prior to data load.                                |
+| record_cnt_after     | The record count for the target reference table after data load.                                   |
+| delta                | Record count delta  (record count after - record count before) for target reference table.         |
+| delta_avg            | Record count delta average for the last 7 job executions for target reference table.               |
+| delta_variance       | Record count delta variance for the last 7 job executions for target reference table.              |
+| delta_std_deviation  | Record count delta standard deviation for the last 6 job executions for target reference table.    |
+
+
 
 ## Log Format:
 
