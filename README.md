@@ -19,6 +19,12 @@ The goal of this project repository is to build a data ingestion application to 
 
 ## Docker Containers
 
+**Create Network**
+
+```
+docker network create data-ingestion-network
+```
+
 **Build Postgres Image**
 
 ```
@@ -211,12 +217,12 @@ TBD ...
 ## Supported File Formats: 
 
 * CSV
-* JSON (TBD)
-* Parquet
+* TSV
 * DAT
-* XLS
-* XLSX
-
+* JSON (TBD)
+* Parquet (TBD)
+* XLS (TBD)
+* XLSX (TBD)
 
 
 ### Parser details
@@ -249,19 +255,19 @@ TBD ...
 
 * **REQUEST W/ LOAD TYPE OVERRIDE:** 
 ```
-python3 controller.py -s REQUEST -cn COINCAP_BITCOIN_HISTORY -a BITCOIN_HISTORY -lt FULL -l info
+python3 controller.py -s REQUEST -cn COINCAP -a BITCOIN_HISTORY -lt FULL -l info
 ```
 
 
 * **REQUEST W/ CONFIGURATION FILE OVERRIDE:** 
 ```
-python3 controller.py -s REQUEST -cn COINCAP_ASSETS -a ASSETS -c ./new_config.ini -l info
+python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -c ./new_config.ini -l info
 ```
 
 
 * **REQUEST W/ PRINT LOG ON TERMINAL:** 
 ``` 
-python3 controller.py -s REQUEST -cn COINCAP_ASSET -a ASSETS -l info  --print_log
+python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -l info  --print_log
 ```
 
 

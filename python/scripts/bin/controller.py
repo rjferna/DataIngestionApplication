@@ -11,21 +11,21 @@ from logger import set_logger
 from aws_common import get_aws_s3
 from postgres_common import PostgresDB
 from postgres_query import (
-    get_connection_details,
-    get_column_details,
-    set_workflow_action_history_record,
-    get_workflow_action_id,
-    update_workflow_action_history_record,
-    set_workflow_audit_details_record,
-    update_workflow_audit_details_record,
+    get_connection_details, 
+    get_column_details, 
+    set_workflow_action_history_record, 
+    get_workflow_action_id, 
+    update_workflow_action_history_record, 
+    set_workflow_audit_details_record, 
+    update_workflow_audit_details_record
 )
 from gcp_common import (
     archive_file,
-    get_gcp_storage,
+    get_gcp_storage, 
     upload_to_bucket,
-    gcp_execute_query,
+    gcp_execute_query           
 )
-from gcp_query import (
+from gcp_query import (    
     get_incremental_date,
     get_record_count,
     get_table_exists,
@@ -62,9 +62,7 @@ def main():
 
     try:
         # Initialize Execution Start Datetime (UTC)
-        execution_start_datetime_utc = datetime.now(timezone.utc).strftime(
-            "%Y-%m-%dT%H:%M:%S.%f"
-        )
+        execution_start_datetime_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
 
         # Makes data directory if not exists
         if os.path.exists(config_var.get("file_path")):
@@ -89,20 +87,20 @@ def main():
         )
 
         db = PostgresDB(
-            host=config_var.get("host"),
-            database=config_var.get("database"),
-            user=config_var.get("user"),
-            password=config_var.get("password"),
+            host=config_var.get('host'),
+            database=config_var.get('database'),
+            user=config_var.get('user'),
+            password=config_var.get('password') 
         )
 
         db.open_connection()
-
+        
         logger.info("Postgres Connection Open...")
 
-        query = get_connection_details(args.get("connection"), args.get("asset"))
+        query = get_connection_details(args.get('connection'), args.get('asset'))
 
         results = db.execute_query(query)
-
+    
         # Assign Data Ingestion Details
         connection_name = results.get("connection_name")
         connection_url = results.get("connection_url")
@@ -132,6 +130,7 @@ def main():
             load_type = results.get("load_type")
         else:
             load_type = args.get("load_type_override")
+
 
         # Set Workflow Action History Job Execution Record
         logger.info("Set Workflow Action History Execution Record")
@@ -164,7 +163,7 @@ def main():
         logfilepath = config_var.get("log_path") + "{:%Y%m%d}_{}.log".format(
             datetime.now(), log_domain
         )
-
+        
         logfile = config_var.get(
             "log_bucket_workflow_execution_destination"
         ) + "{:%Y%m%d}_{}_{}.log".format(datetime.now(), action_id, log_domain)
@@ -176,46 +175,42 @@ def main():
             )
 
         logger.info(f"Beginning {args.get('section')} Data Ingestion")
-
+        
         # Identify Data Ingestion Workflow type
         if ingestion_type == "REQUEST":
             # Decrypt Credentials
             logger.info("Obtaining Connection Credentials")
             pc = Prpcrypt(security_token["access"])
-
+            
             if incremental_date_column == None:
                 response = get_request(
                     key=pc.decrypt(password_encrypted),
-                    url=connection_url,
+                    url="{}{}".format(connection_url, source_schema_table_name),
                     encoding=accepted_encoding,
                     incremental_start_date=None,
                     incremental_end_date=None,
                     interval=None,
                 )
-
+                
             elif incremental_date_column is not None:
                 # Check if Reference table Exists, if not set default incremental start date
                 logger.info(
                     f"Checking if Reference Table Exists: {project_id}.REF_{database_schema}.{table_name}"
                 )
-
+                
                 query = get_table_exists(
                     project_id=project_id,
                     dataset=database_schema,
-                    table_name=table_name,
+                    table_name=table_name
                 )
 
                 ref_exists = gcp_execute_query(
-                    query=query,
-                    return_response=1,
-                    keyfile_path=config_var.get("gcp_creds"),
-                )
+                    query=query, 
+                    return_response=1, 
+                    keyfile_path=config_var.get("gcp_creds")
+                    )
 
-                if (
-                    str(ref_exists) == str
-                    or ref_exists == 0
-                    or (ref_exists == 1 and load_type == "FULL")
-                ):
+                if str(ref_exists) == str or ref_exists == 0 or (ref_exists == 1 and load_type == "FULL"):
                     incr_result = (datetime.now() - timedelta(days=3)).strftime(
                         "%Y-%m-%dT%H:%M:%SZ"
                     )
@@ -223,7 +218,7 @@ def main():
 
                     response = get_request(
                         key=pc.decrypt(password_encrypted),
-                        url=connection_url,
+                        url="{}{}".format(connection_url, source_schema_table_name),
                         encoding=accepted_encoding,
                         incremental_start_date=incr_result,
                         incremental_end_date=datetime.now().strftime(
@@ -233,25 +228,25 @@ def main():
                     )
                 else:
                     logger.info("Get last incremental loadtime")
-
+                    
                     query = get_incremental_date(
                         date=incremental_date_column,
                         project_id=project_id,
                         dataset=database_schema,
-                        table_name=table_name,
+                        table_name=table_name                        
                     )
 
                     incr_result = gcp_execute_query(
                         query=query,
                         return_response=1,
-                        keyfile_path=config_var.get("gcp_creds"),
+                        keyfile_path=config_var.get("gcp_creds")
                     )
 
                     logger.info(f"Data collection start datetime: {incr_result}")
 
                     response = get_request(
                         key=pc.decrypt(password_encrypted),
-                        url=connection_url,
+                        url="{}{}".format(connection_url, source_schema_table_name),
                         encoding=accepted_encoding,
                         incremental_start_date=incr_result,
                         incremental_end_date=datetime.now().strftime(
@@ -263,7 +258,7 @@ def main():
             # Decrypt Credentials
             logger.info("Obtaining Connection Credentials")
             pc = Prpcrypt(security_token["access"])
-
+            
             response = get_aws_s3(
                 aws_access_key=pc.decrypt(password_encrypted),
                 aws_security_token=security_token["token"],
@@ -276,25 +271,28 @@ def main():
             # Decrypt Credentials
             logger.info("Obtaining Connection Credentials")
             pc = Prpcrypt(security_token["token"])
-
-            decrypted_credential = json.loads(pc.decrypt(password_encrypted))
+            
+            decrypted_credential= json.loads(pc.decrypt(password_encrypted))
 
             pc = Prpcrypt(security_token["access"])
 
             gcs_creds = {}
             for name, val in decrypted_credential.items():
                 gcs_creds.update({name: pc.decrypt(val)})
-
+            
             query = get_gcp_storage(
                 bucket_name=connection_url,
                 prefix_path=source_schema_table_name,
                 import_path=config_var.get("file_path"),
-                import_file="{}.{}".format(table_name, file_format),
+                import_file="{}.{}".format(table_name, file_format)
+                )
+            
+            response = gcp_execute_query(
+                query=query,
+                return_response=1,
+                keyfile=config_var.get("gcp_creds")
             )
 
-            response = gcp_execute_query(
-                query=query, return_response=1, keyfile=config_var.get("gcp_creds")
-            )
 
         # Sleep for 3 seconds
         time.sleep(3)
@@ -304,9 +302,10 @@ def main():
             logger.info(f"{response}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
-
+            
             results = db.execute_query(query)
 
             logger.info(f"Error: Updating Workflow Action Record: {results}")
@@ -316,34 +315,32 @@ def main():
                 response_file = response_to_parquet(
                     response_data=response,
                     parquet_filename=config_var.get("file_path") + table_name,
-                    compression=accepted_encoding,
+                    compression=accepted_encoding
                 )
                 logger.info(f"Writing response data to file")
             elif ingestion_type in ("S3", "GCS", "SFTP"):
                 if to_parquet == True:
-                    if file_format == "CSV":
+                    if file_format in ("CSV","TSV", "DAT"): 
                         logger.info(f"Converting {file_format} to PARQUET.")
                         response_file = csv_to_parquet(
                             file_path=response,
                             header=header,
                             seperator=delimiter,
                             quotation=quote_characters,
-                            parquet_filename=config_var.get("file_path") + table_name,
+                            parquet_filename=config_var.get("file_path")
+                            + table_name,
                             compression=accepted_encoding,
                         )
-                    elif file_format == "TSV":
-                        logger.info(f"Converting {file_format} to PARQUET.")
-                        # response_file = tsv_to_parquet()
                     elif file_format == "JSON":
                         logger.info(f"Converting {file_format} to PARQUET.")
-                        # response_file = json_to_parquet()
+                        #response_file = json_to_parquet()
                     elif file_format == "AVRO":
                         logger.info(f"Converting {file_format} to PARQUET.")
-                        # response_file = avro_to_parquet()
+                        #response_file = avro_to_parquet()
                     file_format = "PARQUET"
-                    logger.info(f"File Conversion Completed.")
+                    logger.info(f"File Conversion Completed.")                    
                 else:
-                    logger.info(f"File remaining as: {file_format}")
+                    logger.info(f"File remaining as: {file_format}")                    
 
         # Sleep for 3 seconds
         time.sleep(3)
@@ -353,11 +350,12 @@ def main():
             logger.info(f"{response_file}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
@@ -372,6 +370,7 @@ def main():
                 keyfile_path=config_var.get("gcp_creds"),
             )
 
+
             db.close_connection()
             sys.exit(1)
 
@@ -382,7 +381,7 @@ def main():
         logger.info(
             f"Checking to see if file exists: {bucket_destination + table_name + '.' + file_format}"
         )
-
+        
         archive_response = archive_file(
             source_bucket_name=bucket,
             source_file_name=bucket_destination
@@ -419,11 +418,12 @@ def main():
             logger.info(f"{upload_data}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
@@ -437,7 +437,7 @@ def main():
                 destination_blob_name=logfile,
                 keyfile_path=config_var.get("gcp_creds"),
             )
-
+            
             db.close_connection()
             sys.exit(1)
 
@@ -459,22 +459,25 @@ def main():
             + table_name
             + "."
             + file_format.lower(),
-            file_format=file_format,
+            file_format=file_format
         )
 
         create_external = gcp_execute_query(
-            query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
+            query=query,
+            return_response=0,
+            keyfile_path=config_var.get("gcp_creds")
         )
 
         if "Error:" in create_external:
             logger.info(f"{create_external}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
@@ -488,30 +491,31 @@ def main():
                 destination_blob_name=logfile,
                 keyfile_path=config_var.get("gcp_creds"),
             )
-
+            
             db.close_connection()
             sys.exit(1)
 
         # Get Column Details from GCP
         logger.info(f"Querying database for Column Details.")
-
+        
         query = get_column_details(
             project_id=project_id,
             database_schema=database_schema,
-            table_name=table_name,
+            table_name=table_name
         )
 
         results = db.execute_query(query)
-
+    
         if "Error:" in query:
             logger.info(f"{query}")
 
             update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
@@ -525,15 +529,13 @@ def main():
                 destination_blob_name=logfile,
                 keyfile_path=config_var.get("gcp_creds"),
             )
-
+            
             db.close_connection()
             sys.exit(1)
 
         # Assign Data Ingestion Details
         stg_and_ref_create_table = results.get("stg_ref_create_table_column_details")
-        source_to_stg_conversion = results.get(
-            "source_to_stg_conversion_column_details"
-        )
+        source_to_stg_conversion = results.get("source_to_stg_conversion_column_details")
         source_to_stg_column_query = results.get("source_to_stg_column_query")
         mapping_stg_to_ref_column_query = results.get("mapping_stg_to_ref_column_query")
 
@@ -549,22 +551,25 @@ def main():
             dataset=database_schema,
             table_name=table_name,
             stg_and_ref_create_table=stg_and_ref_create_table,
-            source_to_stg_conversion=source_to_stg_conversion,
+            source_to_stg_conversion=source_to_stg_conversion
         )
 
         create_load_staging = gcp_execute_query(
-            query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
+            query= query,
+            return_response=0,
+            keyfile_path=config_var.get("gcp_creds")
         )
 
         if "Error:" in create_load_staging:
             logger.info(f"{create_load_staging}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
@@ -578,34 +583,39 @@ def main():
                 destination_blob_name=logfile,
                 keyfile_path=config_var.get("gcp_creds"),
             )
-
+            
             db.close_connection()
             sys.exit(1)
 
         # Sleep for 3 seconds
         time.sleep(3)
-
+       
         # Check if Reference table Exists if not Create Reference table
         logger.info(
             f"Checking if Reference Table Exists: {project_id}.REF_{database_schema}.{table_name}"
         )
         query = get_table_exists(
-            project_id=project_id, dataset=database_schema, table_name=table_name
+            project_id=project_id,
+            dataset=database_schema,
+            table_name=table_name
         )
 
         ref_exists = gcp_execute_query(
-            query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
+            query=query,
+            return_response=1,
+            keyfile_path=config_var.get("gcp_creds")
         )
 
         if type(ref_exists) == str:
             logger.info(f"{ref_exists}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
@@ -622,73 +632,90 @@ def main():
                 table_name=table_name,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
-                primary_key_column=primary_key_column,
+                primary_key_column=primary_key_column
             )
 
             create_ref = gcp_execute_query(
-                query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
+                query=query,
+                return_response=0,
+                keyfile_path=config_var.get("gcp_creds")
             )
 
-            logger.info(f"Get Reference Table Record Count.")
+            logger.info(
+                f"Get Reference Table Record Count."
+            )
 
             query = get_record_count(
-                project_id=project_id, dataset=database_schema, table_name=table_name
+                project_id=project_id,
+                dataset=database_schema,
+                table_name=table_name
             )
 
             record_cnt = gcp_execute_query(
-                query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
+                query=query,
+                return_response=1,
+                keyfile_path=config_var.get("gcp_creds")
             )
-
-            logger.info(f"Set Workflow audit details.")
-
+            
+            logger.info(
+                f"Set Workflow audit details."
+            )
+            
             # Set Workflow Audit Details for Ref Table
             query = set_workflow_audit_details_record(
-                action_id=action_id,
-                connection_name=connection_name,
-                database_schema=database_schema,
+                action_id=action_id, 
+                connection_name=connection_name, 
+                database_schema=database_schema, 
                 table_name=table_name,
                 execution_start_datetime=execution_start_datetime_utc,
-                record_count=record_cnt,
-            )
-
+                record_count=record_cnt
+                )
+            
             results = db.execute_query(query)
-
-            logger.info(f"Workflow Audit Details: {results}")
-
+            
+            logger.info(f"Workflow Audit Details: {results}")            
+            
             logger.info(
-                f"Drop & Create Reference table: {create_ref}. Full dataload Completed."
-            )
+                f"Drop & Create Reference table: {create_ref}. Full dataload Completed.")
         elif ref_exists == 1 and load_type == "FULL":
             logger.info(
                 f"Reference Table Flag: {ref_exists} Table exists. Data load type: {load_type}. Drop & Creating table and full refresh."
             )
 
-            logger.info(f"Get Reference Table Record Count.")
-
+            logger.info(
+                f"Get Reference Table Record Count."
+            )
+            
             query = get_record_count(
-                project_id=project_id, dataset=database_schema, table_name=table_name
+                project_id=project_id,
+                dataset=database_schema,
+                table_name=table_name
             )
 
             record_cnt = gcp_execute_query(
-                query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
+                query=query,
+                return_response=1,
+                keyfile_path=config_var.get("gcp_creds")
             )
-
-            logger.info(f"Set Workflow audit details.")
-
+            
+            logger.info(
+                f"Set Workflow audit details."
+            )
+            
             # Set Workflow Audit Details for Ref Table
             query = set_workflow_audit_details_record(
-                action_id=action_id,
-                connection_name=connection_name,
-                database_schema=database_schema,
+                action_id=action_id, 
+                connection_name=connection_name, 
+                database_schema=database_schema, 
                 table_name=table_name,
                 execution_start_datetime=execution_start_datetime_utc,
-                record_count=record_cnt,
-            )
+                record_count=record_cnt
+                )
 
             results = db.execute_query(query)
-
-            logger.info(f"Workflow Audit Details: {results}")
-
+            
+            logger.info(f"Workflow Audit Details: {results}")            
+            
             query = create_and_load_reference_table(
                 flag=0,
                 project_id=project_id,
@@ -696,45 +723,54 @@ def main():
                 table_name=table_name,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
-                primary_key_column=primary_key_column,
+                primary_key_column=primary_key_column
             )
 
             create_ref = gcp_execute_query(
-                query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
+                query=query,
+                return_response=0,
+                keyfile_path=config_var.get("gcp_creds")
             )
-
+                        
             logger.info(
-                f"Drop & Create Reference table: {create_ref}. Full dataload Completed."
-            )
+                f"Drop & Create Reference table: {create_ref}. Full dataload Completed.")
         elif ref_exists == 1 and load_type == "INCR":
             logger.info(
                 f"Reference Table Flag: {ref_exists} Table exists. Data load type: {load_type}. Begin Incremental Data Load."
             )
 
-            logger.info(f"Get Reference Table Record Count.")
+            logger.info(
+                f"Get Reference Table Record Count."
+            )
 
             query = get_record_count(
-                project_id=project_id, dataset=database_schema, table_name=table_name
+                project_id=project_id,
+                dataset=database_schema,
+                table_name=table_name
             )
 
             record_cnt = gcp_execute_query(
-                query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
+                query=query,
+                return_response=1,
+                keyfile_path=config_var.get("gcp_creds")
             )
-
-            logger.info(f"Set Workflow audit details.")
-
+            
+            logger.info(
+                f"Set Workflow audit details."
+            )
+            
             # Set Workflow Audit Details for Ref Table
             query = set_workflow_audit_details_record(
-                action_id=action_id,
-                connection_name=connection_name,
-                database_schema=database_schema,
+                action_id=action_id, 
+                connection_name=connection_name, 
+                database_schema=database_schema, 
                 table_name=table_name,
                 execution_start_datetime=execution_start_datetime_utc,
-                record_count=record_cnt,
-            )
+                record_count=record_cnt
+                )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Workflow Audit Details: {results}")
 
             query = create_and_load_reference_table(
@@ -744,16 +780,17 @@ def main():
                 table_name=table_name,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
-                primary_key_column=primary_key_column,
+                primary_key_column=primary_key_column
             )
 
             create_ref = gcp_execute_query(
-                query=query, return_response=0, keyfile_path=config_var.get("gcp_creds")
+                query=query,
+                return_response=0,
+                keyfile_path=config_var.get("gcp_creds")                
             )
 
             logger.info(
-                f"Incremental Data Load to Reference table: {create_ref} Completed."
-            )
+                f"Incremental Data Load to Reference table: {create_ref} Completed.")
 
         # Sleep for 3 seconds
         time.sleep(3)
@@ -762,44 +799,53 @@ def main():
             logger.info(f"{create_ref}")
 
             query = update_workflow_action_history_record(
-                action_id=action_id, execution_status=-1
+                action_id=action_id,
+                execution_status=-1
             )
 
             results = db.execute_query(query)
-
+            
             logger.info(f"Error: Updating Workflow Action Record: {results}")
 
             logger.info(
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
 
+
         # Update Workflow Action History Record
         query = update_workflow_action_history_record(
-            action_id=action_id, execution_status=1
+            action_id=action_id,
+            execution_status=1
         )
 
         results = db.execute_query(query)
-
+            
         logger.info(f"Updating Workflow Action Record: {results}")
 
         # Sleep for 1 seconds
         time.sleep(1)
 
         query = get_record_count(
-            project_id=project_id, dataset=database_schema, table_name=table_name
+            project_id=project_id,
+            dataset=database_schema,
+            table_name=table_name
         )
 
         record_cnt = gcp_execute_query(
-            query=query, return_response=1, keyfile_path=config_var.get("gcp_creds")
+            query=query,
+            return_response=1,
+            keyfile_path=config_var.get("gcp_creds")
         )
 
         # Update Workflow Audit Details to Include Execution Stats
         query = update_workflow_audit_details_record(
-            action_id=action_id, table_name=table_name, record_count=record_cnt
-        )
+            action_id=action_id, 
+            table_name=table_name,
+            record_count=record_cnt
+            )
 
         results = db.execute_query(query)
-
+    
         logger.info(f"Updating Workflow Audit Details: {results}")
 
         logger.info(f"Execution END.")
