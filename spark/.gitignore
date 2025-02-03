@@ -1,0 +1,3 @@
+scripts/bin/bitcoin_history_linear_regression.py
+
+data/bitcoin_history.csv

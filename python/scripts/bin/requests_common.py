@@ -26,7 +26,10 @@ def get_request(
     accepted_encoding = encoding
 
     if incremental_start_date == None:
-        headers = {
+        if "exchangerate-api" in base_url:
+            response = requests.get('{}{}'.format(base_url,api_key))
+        else:
+            headers = {
             "Accept-Encoding": accepted_encoding,
             "Authorization": f"bearer {api_key}",
         }
@@ -47,7 +50,9 @@ def get_request(
         if start_date is None or end_date is None:
             return "Error: Date Conversion"
 
-        headers = {
+        if "exchangerate-api" in base_url:
+            response = requests.get('{}{}'.format(base_url,api_key))
+        else: headers = {
             "Accept-Encoding": accepted_encoding,
             "Authorization": f"bearer {api_key}",
         }

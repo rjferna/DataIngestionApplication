@@ -13,8 +13,10 @@ The goal of this project repository is to build a data ingestion application to 
 
 3. AWS Account (Free trial is offered) for AWS S3 bucket.
 
-4. CoinCap API Key (Example: Request data source)
-    * To Generate API key refer to: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a> 
+4. Request data sources (Free)
+    * Coincap: To Generate API key refer to: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a> 
+    * Exchange Rate: To Generate API key refer to: <a href="https://www.exchangerate-api.com/" target="_blank"> Exchangerate-api - Documentation</a> 
+
 
 
 ## Docker Containers

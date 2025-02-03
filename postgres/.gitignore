@@ -1,2 +1,3 @@
 statements/coincap_connection_info.sql
 statements/coincap_project_ingestion_connection_info.sql
+statements/exchangerate_connection_info.sql
