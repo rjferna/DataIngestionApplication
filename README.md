@@ -184,52 +184,48 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 
 # Data Ingestions: 
 
-**REQUEST**
+1. **REQUEST** 
 
-For a web request data source you will require the following components for a successful communication between the client and server.
-
-* Endpoint URL: Specific address where the API is hosted. 
-* Headers: Provides essential information for the server to process the request.
-    * Content-Type: Specifies the format of the data being sent.
-    * Authorization: Authentication information like API keys, tokens and/or other credentials
-* Parameters: These can be included in the URL query string or in the request body. Parameters are used to specify additional details about the request, such as filters, sorting criteria, or pagination.
-* Body: For POST, PUT, and PATCH requests, the body contains the data to be sent to the server. This could be in JSON, XML, or other formats
-* Authentication: Depending on the API, you may need to provide authentication details like API keys, OAuth tokens, or other credentials.
-* Versioning: Some APIs require specifying a version in the URL or headers to ensure compatibility with the correct API version.
-* Rate Limiting: Be aware of any rate limits imposed by the API provider to avoid hitting usage limits.
-
-
-**AWS S3 BUCKET**
-
-AWS SDK for python to support S3 as a data source is available. The requirements to establish a S3 connection are the following.
-
-* AWS Access Key
-* AWS Security Token
-* Bucket Name
-* Prefix Path (Object Name)
-* File Name
-
-Boto3: <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html" target="_black">Boto3 - Documentation</a>
+* For a web request data source you will require the following components for a successful communication between the client and server.
+    * Endpoint URL: Specific address where the API is hosted. 
+    * Headers: Provides essential information for the server to process the request.
+        * Content-Type: Specifies the format of the data being sent.
+        * Authorization: Authentication information like API keys, tokens and/or other credentials
+    * Parameters: These can be included in the URL query string or in the request body. Parameters are used to specify additional details about the request, such as filters, sorting criteria, or pagination.
+    * Body: For POST, PUT, and PATCH requests, the body contains the data to be sent to the server. This could be in JSON, XML, or other formats
+    * Authentication: Depending on the API, you may need to provide authentication details like API keys, OAuth tokens, or other credentials.
+    * Versioning: Some APIs require specifying a version in the URL or headers to ensure compatibility with the correct API version.
+    * Rate Limiting: Be aware of any rate limits imposed by the API provider to avoid hitting usage limits.
 
 
-**GCS BUCKET**
+2. **AWS S3 BUCKET**
 
-The Google Cloud Storage SDK for Python, also known as the Google Cloud Storage Python Client, is a library that allows you to interact with Google Cloud Storage from within your Python code.
+* AWS SDK for python to support S3 as a data source is available. The requirements to establish a S3 connection are the following.
+    * AWS Access Key
+    * AWS Security Token
+    * Bucket Name
+    * Prefix Path (Object Name)
+    * File Name
 
-* key file ()
-* Storage Bucket Name
-* Prefix Path
-* File Name
+* Boto3: <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html" target="_black">Boto3 - Documentation</a>
 
-Google Cloud Storage: <a href="https://cloud.google.com/python/docs/reference/storage/latest" target="_black">Python Client for Google Cloud Storage</a>
+
+3. **GCS BUCKET**
+
+* The Google Cloud Storage SDK for Python, also known as the Google Cloud Storage Python Client, is a library that allows you to interact with Google Cloud Storage from within your Python code.
+    * key file ()
+    * Storage Bucket Name
+    * Prefix Path
+    * File Name
+
+* Google Cloud Storage: <a href="https://cloud.google.com/python/docs/reference/storage/latest" target="_black">Python Client for Google Cloud Storage</a>
 
 **SFTP**
-
-TBD ...
-
+* TBD ...
 
 
-## Supported File Formats: 
+
+4. Supported File Formats: 
 
 * CSV
 * TSV
@@ -240,58 +236,50 @@ TBD ...
 * XLSX (TBD)
 
 
-## Parser details
-
-**Description: The data will be first loaded to a Flat File**
-
-* **-s:** The section name of configuration file, which will be used to direct workflow execution.
-
-* **-cn:** The connection name of the data source, which will be used to get the data source connection details.
-
-* **-a:** The asset name which will be used to get the object information.
-
-* **-lt:** Overrides the data load type. If not specified, the program will use the value in `ingestion_config` SQL table
-    * FULL
-    * INCR
-
-* **-c:** The configuration file to be used. If not specified, the program will try to find it with "./config.ini"
-
-* **-l:** Logging level, "info" by default.
-    * info
-    * debug
-    * warning
-    * error
-
-* **--print_log:** Whether print the log to console. False by default
+# Parser details
+* **Description: The data will be first loaded to a Flat File**
+    * **-s:** The section name of configuration file, which will be used to direct workflow execution.
+    * **-cn:** The connection name of the data source, which will be used to get the data source connection details.
+    * **-a:** The asset name which will be used to get the object information.
+    * **-lt:** Overrides the data load type. If not specified, the program will use the value in `ingestion_config` SQL table
+        * FULL
+        * INCR
+    * **-c:** The configuration file to be used. If not specified, the program will try to find it with "./config.ini"
+    * **-l:** Logging level, "info" by default.
+        * info
+        * debug
+        * warning
+        * error
+    * **--print_log:** Whether print the log to console. False by default
 
 
 ## Example Data Ingestion Executions:
 **NOTE:** The First data load should be a `FULL` data load. If `ingestion_config` is configured for `Incremental` you can override.
 
 * **REQUEST W/ LOAD TYPE OVERRIDE:** 
-```
-python3 controller.py -s REQUEST -cn COINCAP -a BITCOIN_HISTORY -lt FULL -l info
-```
+    * ```
+        python3 controller.py -s REQUEST -cn COINCAP -a BITCOIN_HISTORY -lt FULL -l info
+    ```
 
 
 * **REQUEST W/ CONFIGURATION FILE OVERRIDE:** 
-```
-python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -c ./new_config.ini -l info
-```
+    * ```
+        python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -c ./new_config.ini -l info
+    ```
 
 
 * **REQUEST W/ PRINT LOG ON TERMINAL:** 
-``` 
-python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -l info  --print_log
-```
+    * ``` 
+        python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -l info  --print_log
+    ```
 
 
 * **AWS S3 BUCKET:** 
-```
-python3 controller.py -s S3 -cn S3_COINCAP -a SOLANA_HISTORY -l info
-```
+    * ```
+        python3 controller.py -s S3 -cn S3_COINCAP -a SOLANA_HISTORY -l info
+    ```
 
 * **GOOGLE CLOUD STORAGE:**
-```
-python3 controller.py -s GCS -cn GCS_COINCAP -a SOLANA_HISTORY -l info
-```
+    * ```
+        python3 controller.py -s GCS -cn GCS_COINCAP -a SOLANA_HISTORY -l info
+    ```
