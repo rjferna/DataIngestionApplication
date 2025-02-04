@@ -259,27 +259,27 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 * **REQUEST W/ LOAD TYPE OVERRIDE:** 
     * ```
         python3 controller.py -s REQUEST -cn COINCAP -a BITCOIN_HISTORY -lt FULL -l info
-    ```
+      ```
 
 
 * **REQUEST W/ CONFIGURATION FILE OVERRIDE:** 
     * ```
         python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -c ./new_config.ini -l info
-    ```
+      ```
 
 
 * **REQUEST W/ PRINT LOG ON TERMINAL:** 
     * ``` 
         python3 controller.py -s REQUEST -cn COINCAP -a ASSETS -l info  --print_log
-    ```
+      ```
 
 
 * **AWS S3 BUCKET:** 
     * ```
         python3 controller.py -s S3 -cn S3_COINCAP -a SOLANA_HISTORY -l info
-    ```
+      ```
 
 * **GOOGLE CLOUD STORAGE:**
     * ```
         python3 controller.py -s GCS -cn GCS_COINCAP -a SOLANA_HISTORY -l info
-    ```
+      ```
