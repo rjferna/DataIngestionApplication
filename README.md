@@ -1,7 +1,7 @@
-## Intro
+# Intro
 The goal of this project repository is to build a data ingestion application to extract data from multiple sources and leveraging BigQuery as the data warehouse. 
 
-## Prerequisites
+# Prerequisites
 
 1. Docker Engine: <a href="https://docs.docker.com/engine/install/ubuntu/" target="_blank"> Docker Installation Documentation</a>
 
@@ -19,71 +19,82 @@ The goal of this project repository is to build a data ingestion application to 
 
 
 
-## Docker Containers
+# Docker Containers
 
-**Create Network**
+1. **Create Network**
 
-```
-docker network create data-ingestion-network
-```
+    * ```
+      docker network create data-ingestion-network
+      ```
 
-**Build Postgres Image**
+2. **Postgres Container**
 
-```
-docker build -t data-ingestion-postgres-app-image .
-```
+    * Build Postgres Image
+        * ```
+          docker build -t data-ingestion-postgres-app-image .
+          ```
 
-**Run Postgres Container with Network**
+    * Run Postgres Container with Network
+        * ```
+          docker run -d --name data-ingestion-postgres-app-container --network data-ingestion-network data-ingestion-postgres-app-image
+          ```
+    * Run Postgres Container
+        * ```
+            docker run -d \
+            --name data-ingestion-postgres-app-container \
+            -e POSTGRES_USER=metadata_user \
+            -e POSTGRES_PASSWORD=admin \
+            -e POSTGRES_DB=metadata_utilities \
+            -p 5432:5432 \
+            -v /data:/var/lib/postgresql/data \
+            data-ingestion-postgres-app-image
+          ```
 
-```
-docker run -d --name data-ingestion-postgres-app-container --network data-ingestion-network data-ingestion-postgres-app-image
-```
+    * Open an interactive bash session inside the container
+        * ```
+            docker exec -it metadata-db bash
+          ```
 
-**Run Postgres Container**
+    * Inside the container, you can then use psql (PostgreSQL's command-line tool)
+        * ```
+            psql -U metadata_user metadata_utilities
+          ```
 
-```
-docker run -d \
-  --name data-ingestion-postgres-app-container \
-  -e POSTGRES_USER=metadata_user \
-  -e POSTGRES_PASSWORD=admin \
-  -e POSTGRES_DB=metadata_utilities \
-  -p 5432:5432 \
-  -v /data:/var/lib/postgresql/data \
-  data-ingestion-postgres-app-image
-```
+3. **Python Container** 
 
-**Open an interactive bash session inside the container**
-```
-docker exec -it metadata-db bash
-```
+    * Build Python Image
+        * ```
+            docker build -t data-ingestion-python-app-image .
+          ```
 
-**Inside the container, you can then use psql (PostgreSQL's command-line tool)**
+    * Run Python Container with Network
+        * ```
+            docker run -d --name data-ingestion-python-app-container --network data-ingestion-network data-ingestion-python-app-image
+          ```
 
-```
-psql -U metadata_user metadata_utilities
-```
+    * Open Interactive bash session inside Python Container
+        * ```
+            docker exec -it data-ingestion-python-app-container bash
+          ```
 
-**Build Python Image**
+4. **Spark Container** 
 
-```
-docker build -t data-ingestion-python-app-image .
-```
+    * Build Spark Image
+        * ```
+            docker build -t data-ingestion-spark-app-image .
+          ```
 
-**Run Python Container with Network**
+    * Run Spark Container with Network
+        * ```
+            docker run -d --name data-ingestion-spark-app-container --network data-ingestion-network data-ingestion-spark-app-image
+          ```
 
-```
-docker run -d --name data-ingestion-python-app-container --network data-ingestion-network data-ingestion-python-app-image
-```
+    * Open Interactive bash session inside Spark Container
+        * ```
+            docker exec -it data-ingestion-spark-app-container bash
+          ```
 
-**Open Interactive bash session inside Python Container**
-
-```
-docker exec -it data-ingestion-python-app-container bash
-```
-
-
-
-## Postgres Metadata Utility Objects
+# Postgres Metadata Utility Objects
 
 The automation is utilizing a handful of Postgres tables in the `metadata-utilites` database. A user will enter data source connection information, table ingestion 
 configurations, and column details into the metadata SQL tables. lastly, the user executes the python controller script with the required parser arguements which 
@@ -160,8 +171,10 @@ Each workflow audit record has a unique `audit_id` amd map to the `workflow_acti
 | delta_std_deviation  | Record count delta standard deviation for the last 6 job executions for target reference table.    |
 
 
+![alt text](images/workflow_audit_details.png)
 
-## Log Format:
+
+# Log Format:
 
 As the script runs a log will be recorded and uploaded to the `workflow_execution_details` bucket path. 
 The log file will use the format `YYYYMMDD_<process_id>_<ingestion_type>_<connection_name>_<asset>.log`
@@ -169,7 +182,7 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 
 
 
-## Data Ingestions: 
+# Data Ingestions: 
 
 **REQUEST**
 
@@ -227,7 +240,7 @@ TBD ...
 * XLSX (TBD)
 
 
-### Parser details
+## Parser details
 
 **Description: The data will be first loaded to a Flat File**
 
@@ -252,7 +265,7 @@ TBD ...
 * **--print_log:** Whether print the log to console. False by default
 
 
-### Example Data Ingestion Executions:
+## Example Data Ingestion Executions:
 **NOTE:** The First data load should be a `FULL` data load. If `ingestion_config` is configured for `Incremental` you can override.
 
 * **REQUEST W/ LOAD TYPE OVERRIDE:** 
