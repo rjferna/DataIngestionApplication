@@ -1,5 +1,8 @@
 # Intro
-The goal of this project repository is to build a data ingestion application to extract data from multiple sources and leveraging BigQuery as the data warehouse. 
+The goal of this project repository is to build a data ingestion application to extract data from multiple sources and write that data into 
+BigQuery as the target data warehouse. With this application the "extract" step of the ETL/ELT process is simplified allowing none technical
+users to populate a simple SQL metadata template that will be used to populate a metadata database which in turn will be used to execute the 
+data ingestion process. 
 
 # Prerequisites
 
@@ -115,6 +118,21 @@ of the workflow execution which is recorded in the `workflow_action_history` tab
 This table will hold endpoint connection information as well as encrypted credentials
 
 
+| Columns            | Description                                           |
+|--------------------|-------------------------------------------------------|
+| connection_id      | Unique ID for Connection                              |
+| connection_name    | The name for the data source connection.              |
+| connection_url     | The connection source URL, Host, Bucket Name etc.     |
+| user_name          | The connection source user name (if Applicable).      |
+| password_encrypted | The encrypted password for the connection source.     |
+| security_token     | The Security Token or Access Key if applicable.       |
+| created_by         | Individual who created the entry.                     |
+| created_date       | Date the entry was created.                           |
+| modified_by        | Individual who modified the entry.                    |
+| modified_date      | Date the entry was modified.                          |
+
+
+
 ![alt text](images/connection_info.png)
 
 
@@ -133,6 +151,22 @@ The Ingestion Config table contains data/table ingestion configurations such as 
 The Ingestion Column Details table contains column details for the data that is being ingested such as column names, data types, ordinal positions, target table
 
 
+| Columns            | Description                                                     |
+|--------------------|-----------------------------------------------------------------|
+| column_name        | The field / column names from the data source.                  |
+| data_type          | The column name data type when writing data into target table.  |
+| ordinal_position   | The ordinal position of the column when writing to target table.|
+| mapping_column     | The column name for the target table.                           |
+| project_id         | The Bigquery Project ID name. (Or Server Name).                 |
+| database_schema    | The Target Database/Schema name.                                |
+| table_name         | The Table name for the Data Source.                             |
+| created_by         | Individual who created the entry.                               |
+| created_date       | Date the entry was created.                                     |
+| modified_by        | Individual who modified the entry.                              |
+| modified_date      | Date the entry was modified.                                    |
+
+
+
 ![alt text](images/ingestion_column_details.png)
 
 
@@ -143,11 +177,25 @@ The Workflow Action History table contains an audit log of all workflow actions 
 unique `action_id` for each data ingestion workflow that is executed.
 
 
-| Interpretation | Status |
-|----------------|--------|
-| In-Progress    | 0      |
-| Complete       | 1      |
-| Failed         | -1     |
+| Columns                       | Description                                                     |
+|-------------------------------|-----------------------------------------------------------------|
+| action_id                     | Unique ID For workflow execution                                |
+| connection_name               | The name for the data source connection.                        |
+| database_schema               | The Target Database/Schema name.                                |
+| table_name                    | The Table name for the Data Source.                             |
+| executed_by                   | Individual who executed the job run.                            |
+| execution_start_datetime      | The Start Datetime when workflow started.                       |
+| execution_end_datetime        | The completion datetime for workflow.                           |
+| execution_status              | The workflow execution status.                                  |
+
+
+
+
+| Execution_Status Values | Status |
+|-------------------------|--------|
+| In-Progress             | 0      |
+| Complete                | 1      |
+| Failed                  | -1     |
 
 
 
@@ -160,15 +208,22 @@ The Workflow Audit Details table contains statistical metadata for workflow acti
 Each workflow audit record has a unique `audit_id` amd map to the `workflow_action_history` table by `action_id`.
 
 
-| Audit Details        | Description                                                                                        |
-|----------------------|----------------------------------------------------------------------------------------------------|
-| execution_duration   | The duration of the workflow execution in minutes.                                                 |
-| record_cnt_before    | The record count for the target reference table prior to data load.                                |
-| record_cnt_after     | The record count for the target reference table after data load.                                   |
-| delta                | Record count delta  (record count after - record count before) for target reference table.         |
-| delta_avg            | Record count delta average for the last 7 job executions for target reference table.               |
-| delta_variance       | Record count delta variance for the last 7 job executions for target reference table.              |
-| delta_std_deviation  | Record count delta standard deviation for the last 6 job executions for target reference table.    |
+| Columns                       | Description                                                                                |
+|-------------------------------|--------------------------------------------------------------------------------------------|
+| action_id                     | Unique ID For workflow execution.                                                          |
+| audit_id                      | Unique ID For workflow table audit.                                                        |
+| connection_name               | The name for the data source connection.                                                   |
+| database_schema               | The Target Database/Schema name.                                                           |
+| table_name                    | The Table name for the Data Source.                                                        |
+| execution_start_datetime      | The Start Datetime when workflow started.                                                  |
+| execution_end_datetime        | The completion datetime for workflow.                                                      |
+| execution_duration            | The duration of the workflow execution in minutes.                                         |
+| record_cnt_before             | The record count for the target reference table prior to data load.                        |
+| record_cnt_after              | The record count for the target reference table after data load.                           |
+| delta                         | Record count delta  (record count after - record count before) for target reference table. |
+| delta_avg                     | Delta Average for the last 7 job executions for target reference table.                    |
+| delta_variance                | Delta Variance for the last 7 job executions for target reference table.                   |
+| delta_std_deviation           | Delta Standard Deviation for the last 6 job executions for target reference table.         |
 
 
 ![alt text](images/workflow_audit_details.png)
