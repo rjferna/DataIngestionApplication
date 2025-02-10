@@ -17,12 +17,17 @@ RUN wget https://archive.apache.org/dist/spark/spark-3.1.2/spark-3.1.2-bin-hadoo
 RUN tar -xvzf spark-3.1.2-bin-hadoop2.7.tgz 
 RUN mv spark-3.1.2-bin-hadoop2.7 /usr/local/spark
 
-# Install PostgreSQL JDBC driver
+# Install PostgreSQL JDBC driver & BigQuery Connector for Spark
 RUN wget https://jdbc.postgresql.org/download/postgresql-42.3.1.jar -P /usr/local/spark/jars
+RUN wget https://repo1.maven.org/maven2/com/google/cloud/spark/spark-bigquery-with-dependencies_2.12/0.23.2/spark-bigquery-with-dependencies_2.12-0.23.2.jar -P /usr/local/spark/jars 
 
 # Set environment variables
 ENV SPARK_HOME=/usr/local/spark
 ENV PATH=$SPARK_HOME/bin:$PATH
+
+# Install Python Requirements
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy Spark scripts
 COPY data /app/data

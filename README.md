@@ -275,12 +275,14 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 
 * Google Cloud Storage: <a href="https://cloud.google.com/python/docs/reference/storage/latest" target="_black">Python Client for Google Cloud Storage</a>
 
-**SFTP**
+
+4. **SFTP**
+
 * TBD ...
 
 
 
-4. Supported File Formats: 
+5. Supported File Formats: 
 
 * CSV
 * TSV
@@ -291,7 +293,7 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
 * XLSX (TBD)
 
 
-# Parser details
+# Python Container: Parser details
 * **Description: The data will be first loaded to a Flat File**
     * **-s:** The section name of configuration file, which will be used to direct workflow execution.
     * **-cn:** The connection name of the data source, which will be used to get the data source connection details.
@@ -338,3 +340,23 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
     * ```
         python3 controller.py -s GCS -cn GCS_COINCAP -a SOLANA_HISTORY -l info
       ```
+
+# **Spark Container**
+The Spark **template.py** can be used to connect to the Postgres Database so we can collect the encrypted GCP Keyfile credentials.
+Then in  the **gcp_common.py** script we will access a BigQuery table and store the results into a pandas DataFrame which is returned
+to the main script. Lastly, we convert the Pandas DataFrame into a Spark DataFrame for our spark scripting. You can view the 
+**linear_regression_example.py** for a more detailed example.
+
+* **TO DO:**
+    * Create Spark metadata configuration table which holds the configuration values for a specific spark script.
+        * Examples:
+            * spark.executor.instances (e.g. "4", "5", "10")
+            * spark.executor.memory (e.g. "8g", "10g", "12g")
+            * spark.executor.cores (e.g. "4", "8", "16")
+            * spark.driver.memory (e.g. "4g", "8g", "12g")
+            * spark.driver.cores (e.g. "2","3")
+            * spark.sql.autoBroadcastJoinThreshold (e.g. "-1", "128000000")
+            * spark.sql.shuffle.partitions (e.g. "200")
+            * spark.sql.spark.sql.broadcastTimeout (e.g. "900", "1200")
+
+    * TBD ...

@@ -1,0 +1,8 @@
+google-cloud-core==2.4.1
+google-api-core==2.21.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1
+google-cloud-bigquery==3.26.0
+google-cloud-storage==2.18.2
+pycryptodome==3.21.0
+pandas==2.0.3

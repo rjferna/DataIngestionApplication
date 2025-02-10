@@ -1,3 +1,4 @@
 data/bitcoin_history.csv
 
 scripts/.credentials
+scripts/bin/00_play.ipynb
