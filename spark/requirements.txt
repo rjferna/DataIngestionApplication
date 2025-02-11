@@ -5,4 +5,6 @@ google-auth-oauthlib==1.2.1
 google-cloud-bigquery==3.26.0
 google-cloud-storage==2.18.2
 pycryptodome==3.21.0
+psycopg2-binary==2.9.9
 pandas==2.0.3
+python-dotenv==1.0.1

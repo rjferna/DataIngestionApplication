@@ -1,4 +1,8 @@
 data/bitcoin_history.csv
 
-scripts/.credentials
 scripts/bin/00_play.ipynb
+scripts/bin/controller_v1.py
+scripts/bin/postgres_source_example.py
+scripts/bin/TestExecution.py
+scripts/bin/spark_template.py
+

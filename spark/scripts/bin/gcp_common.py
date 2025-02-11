@@ -3,8 +3,36 @@ from google.oauth2 import service_account
 from google.oauth2.service_account import Credentials
 import pandas as pd
 
+
+def get_gcp_storage(
+    bucket_name: str,
+    prefix_path: str,
+    keyfile_contents: dict
+) -> str:
+    try:
+        credentials_dict = keyfile_contents
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+
+        # Initialize a client with the service account keyfile
+        storage_client = storage.Client(credentials=credentials)
+
+        # Get the bucket
+        bucket = storage_client.get_bucket(bucket_name)
+
+        # Get the file
+        file = bucket.blob(prefix_path)
+
+        file_contents = file.download_as_string()
+
+        return file_contents.decode("utf-8")
+    except Exception as e:
+        return f"Error: {e}"
+
+
 def gcp_execute_query(
-    query: str, return_response: int, keyfile_contents: dict
+    query: str, keyfile_contents: dict
 ):
     try:
         credentials_dict = keyfile_contents 

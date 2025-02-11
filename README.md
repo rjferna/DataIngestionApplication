@@ -110,7 +110,7 @@ of the workflow execution which is recorded in the `workflow_action_history` tab
 
 
 **ER Diagram:**
-![alt text](images/metadata_utilities.png)
+![alt text](images/metadata_utilities.drawio.png)
 
 
 
@@ -229,6 +229,39 @@ Each workflow audit record has a unique `audit_id` amd map to the `workflow_acti
 ![alt text](images/workflow_audit_details.png)
 
 
+
+**SPARK_CONFIG**
+The Spark Config table contains Spark Session Builder configurations that will be used to execute the Spark script as well as the 
+GCP bucket details where the script is located
+
+
+| Columns                       | Description                                                                                                                                                                                                                                        |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| spark_id                      | Unique ID For workflow execution.                                                                                                                                                                                                                  |
+| application_name              | The name for the spark application.                                                                                                                                                                                                                |
+| executor_instances            | Determines the initial number of executors to allocate when the Spark application starts. By setting this value appropriately, you can control the initial parallelism of your Spark jobs.                                                         |
+| executor_memory               | Sets the amount of memory to be used by each executor in the Spark cluster.                                                                                                                                                                        |
+| executor_cores                | Specifies the number of cores to use on each executor.                                                                                                                                                                                             |
+| driver_memory                 | Amount of memory to use for the driver process, i.e. where SparkContext is initialized, in the same format as JVM memory strings with a size unit suffix ("k", "m", "g" or "t") (e.g. 512m, 2g).                                                   |
+| driver_cores                  | Number of cores to use for the driver process, only in cluster mode.                                                                                                                                                                               |
+| auto_broadcast_join_threshold | Configures the maximum size in bytes for a table that will be broadcast to all worker nodes when performing a join. By setting this value to -1 broadcasting can be disabled. The default value is same with spark.sql.autoBroadcastJoinThreshold. |
+| shuffle_partitions            | The default number of partitions to use when shuffling data for joins or aggregations. Note: For structured streaming, this configuration cannot be changed between query restarts from the same checkpoint location.                              |
+| broadcast_timeout             | Timeout in seconds for the broadcast wait time in broadcast joins.                                                                                                                                                                                 |
+| connection_id                 | Foreign key for Connection Id                                                                                                                                                                                                                      |
+| connection_name               | The name for the data source connection.                                                                                                                                                                                                           |
+| bucket                        | GCP Bucket name containing source spark script.                                                                                                                                                                                                    |
+| source_file                   | Bucket path of source spark script.                                                                                                                                                                                                                |
+| created_by                    | Individual who created the entry.                                                                                                                                                                                                                  |
+| created_date                  | Date the entry was created.                                                                                                                                                                                                                        |
+| modified_by                   | Individual who modified the entry.                                                                                                                                                                                                                 |
+| modified_date                 | Date the entry was modified.                                                                                                                                                                                                                       |
+
+
+![alt text](images/spark_config.png)
+
+
+
+
 # Log Format:
 
 As the script runs a log will be recorded and uploaded to the `workflow_execution_details` bucket path. 
@@ -342,21 +375,14 @@ Example: `20241215_100124_REQUEST_COINCAP_RATES_RATES.log`
       ```
 
 # **Spark Container**
-The Spark **template.py** can be used to connect to the Postgres Database so we can collect the encrypted GCP Keyfile credentials.
-Then in  the **gcp_common.py** script we will access a BigQuery table and store the results into a pandas DataFrame which is returned
-to the main script. Lastly, we convert the Pandas DataFrame into a Spark DataFrame for our spark scripting. You can view the 
-**linear_regression_example.py** for a more detailed example.
+The Spark **controller.py** script takes two system arguments. The first argument is the `connection_name` from the `ingestion_connection_info` table and, the
+`application_name` from the `spark_config` table. As the script runs it will connect to the Postgres Database so we can collect the encrypted GCP Keyfile credentials
+which will be used to access the target GCP project and the contents of the spark script that will be executing. It also collects the Spark Session builder configurations
+which the controller will set internally which it than passes to the spark script contents we collected from the GCP bucket. With this setup we only need to update the
+spark configurations within postgres database.
 
-* **TO DO:**
-    * Create Spark metadata configuration table which holds the configuration values for a specific spark script.
-        * Examples:
-            * spark.executor.instances (e.g. "4", "5", "10")
-            * spark.executor.memory (e.g. "8g", "10g", "12g")
-            * spark.executor.cores (e.g. "4", "8", "16")
-            * spark.driver.memory (e.g. "4g", "8g", "12g")
-            * spark.driver.cores (e.g. "2","3")
-            * spark.sql.autoBroadcastJoinThreshold (e.g. "-1", "128000000")
-            * spark.sql.shuffle.partitions (e.g. "200")
-            * spark.sql.spark.sql.broadcastTimeout (e.g. "900", "1200")
 
-    * TBD ...
+* **Example**
+    * ```
+      spark-submit controller.py gcs_coincap testexecution
+      ```
