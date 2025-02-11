@@ -257,7 +257,7 @@ GCP bucket details where the script is located
 | modified_date                 | Date the entry was modified.                                                                                                                                                                                                                       |
 
 
-![alt text](images/spark_config.png)
+![alt text](images/spark_config.PNG)
 
 
 
