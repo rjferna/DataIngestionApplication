@@ -85,6 +85,7 @@ try:
 
     results = db.execute_query(query)
 
+    app_name = results.get("application_name")
     executor_instances = results.get("executor_instances")
     executor_memory = results.get("executor_memory")
     executor_cores = results.get("executor_cores")
@@ -120,6 +121,13 @@ try:
         .config("spark.sql.shuffle.partitions", f"{shuffle_partitions}") \
         .config("spark.sql.broadcastTimeout", f"{broadcast_timeout}") \
         .getOrCreate()
+    
+    # Retrieve Spark configuration settings
+    #configurations = spark.sparkContext.getConf().getAll()
+
+    # Validate configuration settings
+    #for config in configurations:
+    #    print(config)
 
     # Pass the Spark session or any configurations to script contents
     spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
