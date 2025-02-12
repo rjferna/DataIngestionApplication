@@ -28,14 +28,18 @@ def get_gcp_storage(
 
         return file_contents.decode("utf-8")
     except Exception as e:
-        return f"Error: {e}"
+        return f"ERROR: {e}"
 
 
 def gcp_execute_query(
     query: str, keyfile_contents: dict
 ):
     try:
-        credentials_dict = keyfile_contents 
+        credentials_dict = keyfile_contents
+
+        # Query Check
+        if "DELETE" in query.upper(): 
+            return "ERROR: DELETE STATEMENTS NOT ALLOWED"
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_info(credentials_dict)
@@ -48,12 +52,15 @@ def gcp_execute_query(
         query_job = client.query(query)
         results = query_job.result()
 
-        # Extract the data into a list of dictionaries
-        rows = [dict(row) for row in results]
+        if "SELECT" in query.upper():
+            # Extract the data into a list of dictionaries
+            rows = [dict(row) for row in results]
 
-        # Convert to a Pandas DataFrame
-        data_df = pd.DataFrame(rows)
+            # Convert to a Pandas DataFrame
+            data_df = pd.DataFrame(rows)
 
-        return data_df
+            return data_df
+        elif ("INSERT", "UPDATE") in query.upper():
+            return "SUCCESS"
     except Exception as e:
-        return f"Error: {e}"
+        return f"ERROR: {e}"

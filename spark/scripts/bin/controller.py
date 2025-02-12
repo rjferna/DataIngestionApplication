@@ -58,10 +58,8 @@ try:
 
     pc = Prpcrypt(security_token["access"])
 
-    gcp_creds = {}
     for name, val in decrypted_credentials.items():
-        gcp_creds.update({name: pc.decrypt(val)})
-
+        decrypted_credentials.update({name: pc.decrypt(val)})
 
     #-- Spark Configurations --#
     print("Get Spark Configuration...")
@@ -103,11 +101,11 @@ try:
     contents = get_gcp_storage(
         bucket_name=bucket,
         prefix_path=source_file,
-        keyfile_contents=gcp_creds
+        keyfile_contents=decrypted_credentials
         )
 
     # Simulate command line argument to pass GCP Credentials
-    sys.argv = ['controller.py', gcp_creds] 
+    sys.argv = ['controller.py', decrypted_credentials] 
 
     # Initialize SparkSession with configurations
     spark = SparkSession.builder \
