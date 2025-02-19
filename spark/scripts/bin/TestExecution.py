@@ -1,4 +1,14 @@
-#-- This File should be placed in GCP Bucket --#
+#-------------------------------------------------------------------------------------------------------------------#
+#-- Notes: Spark Scripts should be placed in GCP Bucket.                                                          --#
+#--                                                                                                               --#
+#-- Description: The spark controller script will take two arguements (Connection Name, Spark Application Name),  --#
+#--     query Postgres database for GCP credentails and Spark Application Configurations. After collecting        --#
+#--     configuration data the controller will build the required Spark Session Connfiguration and read in the    --#
+#--     from this script from a GCP bucket and execute the spark code.                                            --#
+#--                                                                                                               --#
+#--     This script specifically will query the assets table build a DataFrame as show the DataFrame contents.    --#
+#--                                                                                                               --#
+#-------------------------------------------------------------------------------------------------------------------#
 
 import sys
 from gcp_common import gcp_execute_query

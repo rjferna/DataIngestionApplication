@@ -1,4 +1,4 @@
-DELETE FROM metadata_utilities.spark_config WHERE table_name = 'TestExecution';
+DELETE FROM metadata_utilities.spark_config WHERE table_name = 'TestExecution2';
 INSERT INTO metadata_utilities.spark_config
 (
 application_name,
@@ -21,9 +21,9 @@ modified_date
 )
 VALUES
 (
-'TestExecution',
+'TestExecution2',
 '4',
-'8g',
+'4g',
 '4',
 '4g',
 '2',
@@ -33,7 +33,7 @@ VALUES
 7,
 'GCS_COINCAP',
 'dev-coincap-data',
-'spark/TestExecution.py',
+'spark/TestExecution2.py',
 'ADMIN',
 CURRENT_TIMESTAMP,
 'ADMIN',

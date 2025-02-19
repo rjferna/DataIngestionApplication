@@ -2,6 +2,7 @@ from google.cloud import storage, bigquery
 from google.oauth2 import service_account
 from google.oauth2.service_account import Credentials
 import pandas as pd
+import pandas_gbq
 
 
 def get_gcp_storage(
@@ -62,5 +63,35 @@ def gcp_execute_query(
             return data_df
         elif ("INSERT", "UPDATE") in query.upper():
             return "SUCCESS"
+    except Exception as e:
+        return f"ERROR: {e}"
+
+
+def gcp_write_dataframe(
+    pandas_dataframe: str,
+    project_id: str,
+    dataset_id: str,
+    table_id: str,
+    keyfile_contents: dict,
+    if_exists: str,
+    table_schema: dict
+
+):
+    try:
+        credentials_dict = keyfile_contents
+        destination_table = f"{dataset_id}.{table_id}"
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+
+        # Write DataFrame to BigQuery
+        pandas_gbq.to_gbq(pandas_dataframe, 
+                          destination_table, 
+                          project_id=project_id, 
+                          credentials=credentials, 
+                          if_exists=if_exists,
+                          table_schema=table_schema
+                          )
+
+        return "SUCCESS"
     except Exception as e:
         return f"ERROR: {e}"

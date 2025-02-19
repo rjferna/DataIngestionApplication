@@ -5,5 +5,7 @@ scripts/bin/controller_v1.py
 scripts/bin/dep_linear_regression_example.py
 scripts/bin/dep_postgres_source_example.py
 scripts/bin/dep_spark_template.py
+scripts/bin/TestExecution3.py
+scripts/bin/TestExecution4.py
 
 scripts/bin/.credentials
