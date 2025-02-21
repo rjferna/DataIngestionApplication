@@ -97,6 +97,62 @@ data ingestion process.
             docker exec -it data-ingestion-spark-app-container bash
           ```
 
+5. **Airflow Container**
+
+    * Build Airflow Image
+        * ```
+          docker build -t data-ingestion-airflow-app-image .
+          ```
+
+    * Run Airflow Container Temporarily to initialize the database
+        * ```
+            docker run --rm \
+            --network data-ingestion-network \
+            -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://metadata_user:admin@data-ingestion-postgres-app-container:5432/metadata_utilities" \
+            -e AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://metadata_user:admin@data-ingestion-postgres-app-container:5432/metadata_utilities" \
+            data-ingestion-airflow-app-image \
+            airflow db init
+          ```
+
+    * Run container & Create new Airflow user (Can skip if you want to use default login/credentials)
+        * ```
+            docker run --rm \
+            --network data-ingestion-network \
+            -p 8080:8080 \
+            -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://metadata_user:admin@data-ingestion-postgres-app-container:5432/metadata_utilities" \
+            -e AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://metadata_user:admin@data-ingestion-postgres-app-container:5432/metadata_utilities" \
+            -v /path/to/local/dags:/scripts/dags \
+            data-ingestion-airflow-app-image \
+            airflow users create \
+                --username metadata_airflow \
+                --firstname Admin1 \
+                --lastname User1 \
+                --role Admin \
+                --email metadata_user@example.com \
+                --password admin
+          ```
+
+    * Run Airflow Container 
+        * ```
+            docker run -d \
+            --name data-ingestion-airflow-app-container \
+            --network data-ingestion-network \
+            -p 8080:8080 \
+            -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://metadata_user:admin@data-ingestion-postgres-app-container:5432/metadata_utilities" \
+            -e AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://metadata_user:admin@data-ingestion-postgres-app-container:5432/metadata_utilities" \
+            -e AIRFLOW__CORE__DAGS_FOLDER="/opt/airflow/dags" \
+            -v /path/to/local/dags:/opt/airflow/dags \
+            --user 0:0 \
+            data-ingestion-airflow-app-image \
+            airflow standalone
+          ```
+
+    * Finding Password (Needed only if default login of admin/admin not working. Sometimes a more complex password is generated)
+        * ```
+            docker logs airflow
+          ```
+
+
 # Postgres Metadata Utility Objects
 
 The automation is utilizing a handful of Postgres tables in the `metadata-utilites` database. A user will enter data source connection information, table ingestion 
@@ -386,3 +442,26 @@ spark configurations within postgres database.
     * ```
       spark-submit controller.py gcs_coincap testexecution
       ```
+
+
+# **Airflow: Workflow Orchestration**
+Apache Airflow is an open-source platform for developing, scheduling, and monitoring batch-oriented workflows. We will be using airflow to create a simple dag
+to run the python and spark controller scripts to extract and ingest raw coincap data into Bigquery and, run a spark script that performs a linear regression on
+bitcoin history data.
+
+* Apache Airflow: <a href="https://airflow.apache.org/docs/apache-airflow/stable/" target="_black"> Apache Airflow Documentation</a>
+
+
+**Airflow Home page**
+![alt text](images/airflow_dags.png)
+
+
+
+
+**wf_coincap_etl_dag**
+This dag will first extract Coincap Assets, Solana History and Bitcoin History data by passing the required arguments to the `controller.py` script in the 
+`data-ingestion-python-app-image`. It will then execute a spark script using the `controller.py` script in the `data-ingestion-spark-app-image`. In this example
+the `bitcoin_history_linear_regression` spark task has a dependency on the `extract_load_bitcoin_history` task.
+
+
+![alt text](images/workflow_coincap_etl_dag.png)
